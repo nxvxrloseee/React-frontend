@@ -1,24 +1,23 @@
-# Logs
-logs
+# Created by https://www.toptal.com/developers/gitignore/api/vite,react
+# Edit at https://www.toptal.com/developers/gitignore?templates=vite,react
+
+### react ###
+.DS_*
 *.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
+logs
+**/*.backup.*
+**/*.back.*
+.env
 
 node_modules
-dist
-dist-ssr
-*.local
+bower_components
 
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
-.DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+*.sublime*
+
+psd
+thumb
+sketch
+
+#!! ERROR: vite is undefined. Use list command to see defined gitignore types !!#
+
+# End of https://www.toptal.com/developers/gitignore/api/vite,react
