@@ -9,7 +9,7 @@ export const AuthProvider = ({ children }) => {
         const token = localStorage.getItem('access_token');
         return token ? {loggedIn: true} : null;
     });
-    
+
     const navigate = useNavigate();
 
     const login = async (credentials) => {
@@ -19,9 +19,13 @@ export const AuthProvider = ({ children }) => {
             localStorage.setItem('refresh_token', data.refresh);
             setUser({ loggedIn: true });
             navigate('/'); // Переход на главную после входа
+            console.log(data);
             return { success: true };
+            
         } catch (error) {
+            
             return { success: false, message: 'Неверный логин или пароль', error };
+            
         }
     };
 
