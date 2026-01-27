@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import api from '../api/api';
+import { api, clientApi } from '../api/api';
 
 const styles = {
     container: { maxWidth: '800px', margin: '0 auto' },
@@ -18,8 +18,9 @@ const Payments = () => {
     // Загрузка списка клиентов для Select
     const loadClients = useCallback(async () => {
         try {
-            const { data } = await api.get('clients/');
-            setClients(data);
+            // fetch API возвращает { data, status, headers }
+            const response = await api.get('/clients/');
+            setClients(response.data);
         } catch (err) {
             console.error("Ошибка при загрузке клиентов", err);
         }
@@ -35,7 +36,7 @@ const Payments = () => {
 
         try {
             // Отправка на Django: /api/payments/
-            await api.post('payments/', formData);
+            await api.post('/payments/', formData);
             setStatus({ type: 'success', message: 'Платеж успешно зарегистрирован!' });
             setFormData({ client: '', amount: '', purpose: 'Абонемент' }); // Очистка
         } catch (err) {

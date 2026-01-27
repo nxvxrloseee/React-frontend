@@ -13,8 +13,9 @@ const Clients = () => {
 
     const loadClients = useCallback(async () => {
         try {
-            const { data } = await clientApi.getAll(searchTerm);
-            setClients(data);
+            // fetch API возвращает { data, status, headers }
+            const response = await clientApi.getAll(searchTerm);
+            setClients(response.data);
         } catch (error) {
             console.error('Ошибка загрузки клиентов', error)
         }
@@ -22,7 +23,7 @@ const Clients = () => {
 
     useEffect(() => {
         loadClients();
-    }, [loadClients]); // Перезагружаем при изменении поиска
+    }, [loadClients]);
 
     return (
         <div>

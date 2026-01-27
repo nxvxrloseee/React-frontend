@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import api from '../api/api';
+import { reportApi } from '../api/api';
 
 const styles = {
     grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' },
@@ -14,11 +14,22 @@ const Reports = () => {
     const downloadReport = async (type) => {
         setLoading(type);
         try {
-            // Запрашиваем PDF как blob (бинарный объект)
-            const response = await api.get(`reports/${type}/`, { responseType: 'blob' });
+            let response;
+            
+            // Вызываем соответствующий метод API
+            if (type === 'revenue') {
+                response = await reportApi.getRevenue();
+            } else if (type === 'attendance') {
+                response = await reportApi.getAttendance();
+            } else if (type === 'trainer_performance') {
+                response = await reportApi.getTrainers();
+            }
+            
+            // response.data теперь содержит Blob
+            const blob = response.data;
             
             // Создаем временную ссылку для скачивания
-            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const url = window.URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
             link.setAttribute('download', `report_${type}_${new Date().toLocaleDateString()}.pdf`);
@@ -26,6 +37,9 @@ const Reports = () => {
             document.body.appendChild(link);
             link.click();
             link.remove();
+            
+            // Освобождаем память
+            window.URL.revokeObjectURL(url);
         } catch (error) {
             alert('Ошибка при генерации отчета. Проверьте права доступа.');
             console.log(error)
