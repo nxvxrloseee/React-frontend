@@ -9,42 +9,25 @@ const Login = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        
-        console.log('🎯 Form submitted!');
-        console.log('📋 Form data:', {
-            username: credentials.username,
-            hasPassword: !!credentials.password,
-            passwordLength: credentials.password?.length,
-        });
-
         setError('');
         setIsLoading(true);
-        
-        console.log('⏳ Setting loading state to true...');
 
         try {
-            console.log('🚀 Calling login function...');
             const result = await login(credentials);
             
-            console.log('📬 Login result received:', result);
-
             if (!result.success) {
-                console.log('❌ Login failed, setting error message:', result.message);
                 setError(result.message);
-            } else {
-                console.log('✅ Login successful!');
             }
         } catch (err) {
-            console.error('💥 Unexpected error in handleSubmit:', err);
-            setError('Произошла неожиданная ошибка');
+            console.log(err);
+            setError('Произошла ошибка соединения');
         } finally {
             setIsLoading(false);
-            console.log('⏹️ Setting loading state to false');
         }
     };
 
     return (
-        <div className="auth-container" style={styles.container}>
+        <div style={styles.container}>
             <form onSubmit={handleSubmit} style={styles.form}>
                 <h2 style={styles.title}>Фитнес-Лайф</h2>
                 <p style={styles.subtitle}>Вход в систему управления</p>
@@ -52,10 +35,6 @@ const Login = () => {
                 {error && (
                     <div style={styles.error}>
                         {error}
-                        <br />
-                        <small style={{ fontSize: '12px', opacity: 0.8 }}>
-                            (Откройте консоль браузера для деталей)
-                        </small>
                     </div>
                 )}
                 
@@ -64,10 +43,7 @@ const Login = () => {
                     placeholder="Логин"
                     style={styles.input}
                     value={credentials.username}
-                    onChange={(e) => {
-                        console.log('📝 Username changed:', e.target.value);
-                        setCredentials({...credentials, username: e.target.value});
-                    }}
+                    onChange={(e) => setCredentials({...credentials, username: e.target.value})}
                     required
                     disabled={isLoading}
                 />
@@ -76,10 +52,7 @@ const Login = () => {
                     placeholder="Пароль"
                     style={styles.input}
                     value={credentials.password}
-                    onChange={(e) => {
-                        console.log('🔒 Password changed, length:', e.target.value.length);
-                        setCredentials({...credentials, password: e.target.value});
-                    }}
+                    onChange={(e) => setCredentials({...credentials, password: e.target.value})}
                     required
                     disabled={isLoading}
                 />
@@ -94,23 +67,11 @@ const Login = () => {
                     {isLoading ? 'Вход...' : 'Войти'}
                 </button>
             </form>
-
-            {/* Информационная панель для отладки */}
-            <div style={styles.debugPanel}>
-                <h4>🔍 Информация для отладки</h4>
-                <p>Откройте консоль браузера (F12) чтобы увидеть:</p>
-                <ul style={{ textAlign: 'left', fontSize: '12px' }}>
-                    <li>📤 Исходящие запросы</li>
-                    <li>📥 Ответы от сервера</li>
-                    <li>🔑 Информацию о токенах</li>
-                    <li>❌ Детали ошибок</li>
-                </ul>
-            </div>
         </div>
     );
 };
 
-// Базовые стили
+// Стили
 const styles = {
     container: { 
         display: 'flex', 
@@ -128,7 +89,6 @@ const styles = {
         boxShadow: '0 4px 12px rgba(0,0,0,0.1)', 
         width: '350px', 
         textAlign: 'center',
-        marginBottom: '20px',
     },
     title: { 
         margin: '0 0 10px', 
@@ -169,17 +129,6 @@ const styles = {
         padding: '10px',
         backgroundColor: '#fee',
         borderRadius: '4px',
-    },
-    debugPanel: {
-        background: '#fff',
-        padding: '20px',
-        borderRadius: '8px',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-        maxWidth: '350px',
-        width: '100%',
-        textAlign: 'center',
-        fontSize: '14px',
-        color: '#555',
     }
 };
 

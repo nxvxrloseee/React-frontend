@@ -1,11 +1,18 @@
+import { Outlet } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 
-const MainLayout = ({ children }) => {
+const MainLayout = () => {
     return (
-        <div style={{ display: 'flex' }}>
+        <div style={{ display: 'flex', minHeight: '100vh' }}>
             <Sidebar />
-            <main style={{ marginLeft: '250px', flex: 1, padding: '30px', backgroundColor: '#f9f9f9', minHeight: '100vh' }}>
-                {children}
+            <main style={{ 
+                flex: 1, 
+                marginLeft: '240px', // Ширина сайдбара
+                padding: '20px', 
+                backgroundColor: '#f4f7f6' 
+            }}>
+                {/* БЕЗ ЭТОГО ТЕГА СТРАНИЦЫ НЕ ПОЯВЯТСЯ */}
+                <Outlet /> 
             </main>
         </div>
     );

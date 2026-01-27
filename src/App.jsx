@@ -1,76 +1,39 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './context/AuthContext';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import MainLayout from './layout/MainLayout';
-
-// Импорт страниц
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Clients from './pages/Clients';
-import Schedule from './pages/Schedule';
+import Schedule from './pages/Schedule'; // Убедись, что импорт есть
 import Payments from './pages/Payments';
-import Reports from './pages/Reports';
+import Reports from './pages/Reports';   // Убедись, что импорт есть
+import { useAuth } from './context/AuthContext';
 
-// Импорт глобальных стилей
-import './assets/css/index.css';
-import './assets/css/App.css';
-
-/**
- * Компонент для защиты роутов. 
- * Если пользователь не авторизован, отправляет на страницу логина.
- */
-const PrivateRoute = ({ children }) => {
-    const { user } = useAuth();
-    
-    // Пока статус загрузки не определен, можно вернуть пустой экран или спиннер
-    if (user === undefined) return null; 
-    
-    return user ? children : <Navigate to="/login" />;
+// Компонент для защиты роутов
+const ProtectedRoute = ({ children }) => {
+    const { user, loading } = useAuth();
+    if (loading) return <div>Загрузка...</div>;
+    return user ? children : <Navigate replace to="/login" />;
 };
 
 function App() {
     return (
-        <Router>
-            <AuthProvider>
-                <Routes>
-                    {/* Публичный маршрут */}
-                    <Route path="/login" element={<Login />} />
-
-                    {/* Защищенные маршруты внутри MainLayout */}
-                    <Route path="/" element={
-                        <PrivateRoute>
-                            <MainLayout><Dashboard /></MainLayout>
-                        </PrivateRoute>
-                    } />
-
-                    <Route path="/clients" element={
-                        <PrivateRoute>
-                            <MainLayout><Clients /></MainLayout>
-                        </PrivateRoute>
-                    } />
-
-                    <Route path="/schedule" element={
-                        <PrivateRoute>
-                            <MainLayout><Schedule /></MainLayout>
-                        </PrivateRoute>
-                    } />
-
-                    <Route path="/payments" element={
-                        <PrivateRoute>
-                            <MainLayout><Payments /></MainLayout>
-                        </PrivateRoute>
-                    } />
-
-                    <Route path="/reports" element={
-                        <PrivateRoute>
-                            <MainLayout><Reports /></MainLayout>
-                        </PrivateRoute>
-                    } />
-
-                    {/* Редирект со всех несуществующих страниц на главную */}
-                    <Route path="*" element={<Navigate to="/" />} />
-                </Routes>
-            </AuthProvider>
-        </Router>
+        <Routes>
+            <Route path="/login" element={<Login />} />
+            
+            <Route path="/" element={
+                <ProtectedRoute>
+                    <MainLayout />
+                </ProtectedRoute>
+            }>
+                <Route index element={<Dashboard />} />
+                <Route path="clients" element={<Clients />} />
+                <Route path="schedule" element={<Schedule />} /> {/* Добавлено */}
+                <Route path="payments" element={<Payments />} />
+                <Route path="reports" element={<Reports />} />   {/* Добавлено */}
+            </Route>
+            
+            <Route path="*" element={<Navigate to="/" />} />
+        </Routes>
     );
 }
 

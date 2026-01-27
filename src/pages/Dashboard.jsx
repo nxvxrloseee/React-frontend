@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { clientApi, trainingApi } from '../api/api';
 import { Link } from 'react-router-dom';
+import '../assets/css/App.css'
 
 const Dashboard = () => {
     // Состояния для статистики
