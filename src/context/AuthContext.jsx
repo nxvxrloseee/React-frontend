@@ -13,13 +13,14 @@ export const AuthProvider = ({ children }) => {
     const navigate = useNavigate();
 
     const login = async (credentials) => {
+        console.log(credentials);
         try {
             const { data } = await authApi.login(credentials);
+            console.log(data);
             localStorage.setItem('access_token', data.access);
             localStorage.setItem('refresh_token', data.refresh);
             setUser({ loggedIn: true });
             navigate('/'); // Переход на главную после входа
-            console.log(data);
             return { success: true };
             
         } catch (error) {

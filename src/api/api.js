@@ -36,8 +36,8 @@ api.interceptors.response.use(
 // --- МЕТОДЫ API ---
 
 export const authApi = {
-    login: (credentials) => api.post('/auth/login/', credentials),
-    refresh: (refresh) => api.post('/auth/refresh/', { refresh }),
+    login: (credentials) => api.post('auth/login/', credentials),
+    refresh: (refresh) => api.post('auth/refresh/', { refresh }),
 };
 
 export const clientApi = {
