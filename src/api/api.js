@@ -120,13 +120,22 @@ export const hallApi = {
     delete: (id) => apiRequest(`/halls/${id}/`, { method: 'DELETE' }),
 };
 
-// Membership Types API
-export const membershipTypeApi = {
+// Membership API
+export const membershipApi = {
     getAll: () => apiRequest('/memberships/'),
     getById: (id) => apiRequest(`/memberships/${id}/`),
     create: (data) => apiRequest('/memberships/', { method: 'POST', body: data }),
     update: (id, data) => apiRequest(`/memberships/${id}/`, { method: 'PUT', body: data }),
     delete: (id) => apiRequest(`/memberships/${id}/`, { method: 'DELETE' }),
+};
+
+// Membership Type API
+export const membershipTypeApi = {
+    getAll: () => apiRequest('/membership-types/'),
+    getById: (id) => apiRequest(`/membership-types/${id}/`),
+    create: (data) => apiRequest('/membership-types/', { method: 'POST', body: data }),
+    update: (id, data) => apiRequest(`/membership-types/${id}/`, { method: 'PUT', body: data }),
+    delete: (id) => apiRequest(`/membership-types/${id}/`, { method: 'DELETE' }),
 };
 
 // Trainings/Schedule API
