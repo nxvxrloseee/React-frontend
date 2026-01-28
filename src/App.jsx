@@ -9,11 +9,19 @@ import Reports from './pages/Reports';   // Убедись, что импорт 
 import { useAuth } from './context/AuthContext';
 
 // Компонент для защиты роутов
-const ProtectedRoute = ({ children }) => {
+const ProtectedRoute = ({ children, allowedRoles }) => {
     const { user, loading } = useAuth();
+
     if (loading) return <div>Загрузка...</div>;
-    return user ? children : <Navigate replace to="/login" />;
+    if (!user) return <Navigate to="/login" />;
+
+    if (allowedRoles && !allowedRoles.includes(user.role)) {
+        return <Navigate to="/" />;
+    }
+
+    return children;
 };
+
 
 function App() {
     return (
@@ -21,15 +29,13 @@ function App() {
             <Route path="/login" element={<Login />} />
             
             <Route path="/" element={
-                <ProtectedRoute>
                     <MainLayout />
-                </ProtectedRoute>
             }>
                 <Route index element={<Dashboard />} />
                 <Route path="clients" element={<Clients />} />
                 <Route path="schedule" element={<Schedule />} /> {/* Добавлено */}
                 <Route path="payments" element={<Payments />} />
-                <Route path="reports" element={<Reports />} />   {/* Добавлено */}
+                <Route path="reports" element={<ProtectedRoute allowedRoles={['admin', 'manager']}><Reports /></ProtectedRoute>} />   {/* Добавлено */}
             </Route>
             
             <Route path="*" element={<Navigate to="/" />} />

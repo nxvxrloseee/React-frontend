@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { MENU_ITEMS } from '../config/menu';
 
 const Sidebar = () => {
     const { user, logout } = useAuth();
@@ -7,46 +8,18 @@ const Sidebar = () => {
     // Для диагностики: посмотрите в консоль F12, что именно там написано
     console.log("Текущая роль пользователя:", user?.role);
 
-    const menuItems = [
-        { 
-            path: '/', 
-            label: 'Главная', 
-            icon: '🏠', 
-            roles: ['admin', 'manager', 'trainer', 'staff'] // добавил staff на всякий случай
-        },
-        { 
-            path: '/clients', 
-            label: 'Клиенты', 
-            icon: '👥', 
-            roles: ['admin', 'manager', 'trainer', 'staff'] 
-        },
-        { 
-            path: '/schedule', 
-            label: 'Расписание', 
-            icon: '📅', 
-            roles: ['admin', 'manager', 'trainer', 'staff'] 
-        },
-        { 
-            path: '/payments', 
-            label: 'Платежи', 
-            icon: '💰', 
-            roles: ['admin', 'manager', 'staff'] 
-        },
-        { 
-            path: '/reports', 
-            label: 'Отчеты', 
-            icon: '📊', 
-            roles: ['manager', 'admin'] 
-        },
-    ];
-
-    // Если user.role пустой или не совпадает, покажем всё (для теста), 
-    // либо отфильтруем аккуратно:
-    const userRole = user?.role?.toLowerCase() || 'guest';
+    const userRole = (user && typeof user.role == 'string')
+        ? user.role.toLowerCase()
+        : 'guest';
     
-    const visibleItems = menuItems.filter(item => 
-        item.roles.includes(userRole) || userRole === 'admin' // Админу видно всё всегда
+    const visibleItems = MENU_ITEMS.filter(item => 
+        item.roles.includes(userRole)
     );
+
+    const handleLogout = () => {
+        logout();
+        window.location.href = '/login';
+    };
 
     return (
         <aside style={styles.sidebar}>
@@ -78,7 +51,7 @@ const Sidebar = () => {
                 )}
             </nav>
 
-            <button onClick={logout} style={styles.logoutBtn}>
+            <button onClick={handleLogout} style={styles.logoutBtn}>
                 🚪 Выйти
             </button>
         </aside>

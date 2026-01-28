@@ -1,63 +1,68 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { clientApi } from '../api/api';
-
-const styles = {
-    searchInput: { width: '100%', padding: '10px', marginBottom: '20px' },
-    table: { width: '100%', borderCollapse: 'collapse' },
-    row: { borderBottom: '1px solid #eee' }
-};
+import ClientForm from '../components/clients/ClientFrom';
+import ClientTable from '../components/clients/ClientTable';
 
 const Clients = () => {
     const [clients, setClients] = useState([]);
-    const [searchTerm, setSearchTerm] = useState('');
+    const [editing, setEditing] = useState(null);
 
-    const loadClients = useCallback(async () => {
-        try {
-            // fetch API возвращает { data, status, headers }
-            const response = await clientApi.getAll(searchTerm);
-            setClients(response.data);
-        } catch (error) {
-            console.error('Ошибка загрузки клиентов', error)
+    const [isOpen, setIsOpen] = useState(false);
+
+    const load = async () => {
+        const res = await clientApi.getAll();
+        setClients(res.data);
+    };
+
+    useEffect(() => { load(); }, []);
+
+    const create = async (data) => {
+        await clientApi.create(data);
+        load();
+    };
+
+    const update = async (id, data) => {
+        await clientApi.update(id, data);
+        setEditing(null);
+        load();
+    };
+
+    const remove = async (id) => {
+        if (confirm('Удалить клиента?')) {
+            await clientApi.delete(id);
+            load();
         }
-    }, [searchTerm]);
-
-    useEffect(() => {
-        loadClients();
-    }, [loadClients]);
+    };
 
     return (
-        <div>
-            <h2>Управление клиентами</h2>
-            <div>
-                <input
-                    type="text"
-                    placeholder="Поиск по фамилии или телефону..."
-                    style={styles.searchInput}
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                />
-            </div>
-            <table style={styles.table}>
-                <thead>
-                    <tr style={{ backgroundColor: '#ecf0f1' }}>
-                        <th>Фамилия</th>
-                        <th>Имя</th>
-                        <th>Телефон</th>
-                        <th>Дата регистрации</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {clients.map(client => (
-                        <tr key={client.id} style={styles.row}>
-                            <td>{client.surname}</td>
-                            <td>{client.name}</td>
-                            <td>{client.phone}</td>
-                            <td>{new Date(client.registration_date).toLocaleDateString()}</td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
-        </div>
+        <>
+            <h1>Клиенты</h1>
+
+            <ClientForm
+                editing={editing}
+                onSubmit={editing ? update : create}
+                onCancel={() => setEditing(null)}
+            />
+
+            <ClientTable
+                data={clients}
+                onEdit={setEditing}
+                onDelete={remove}
+            />
+
+            <Button onClick={() => setIsOpen(true)}>Добавить клиента</Button>
+
+            {isOpen && (
+                <Modal title="Клиент" onClose={() => setIsOpen(false)}>
+                    <ClientForm 
+                        onSubmit={(data) => {
+                            create(data);
+                            setIsOpen(false);
+                        }}
+                    />
+                </Modal>
+            )}
+        </>
     );
 };
 

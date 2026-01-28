@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 const Login = () => {
     const [credentials, setCredentials] = useState({ username: '', password: '' });
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const { login } = useAuth();
+    const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -15,9 +17,13 @@ const Login = () => {
         try {
             const result = await login(credentials);
             
-            if (!result.success) {
-                setError(result.message);
+            if (result.success) {
+                navigate('/');
+            } 
+            else {
+                setError(result.message)
             }
+            
         } catch (err) {
             console.log(err);
             setError('Произошла ошибка соединения');
