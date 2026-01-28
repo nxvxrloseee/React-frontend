@@ -1,6 +1,5 @@
 const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api';
 
-// Флаг, чтобы не зациклиться, если рефреш-токен тоже протух
 let isRefreshing = false;
 
 async function apiRequest(endpoint, options = {}) {
@@ -29,14 +28,12 @@ async function apiRequest(endpoint, options = {}) {
     try {
         let response = await fetch(url, config);
 
-        // --- ЛОГИКА ВОССТАНОВЛЕНИЯ СЕССИИ (401 Error) ---
         if (response.status === 401 && !isRefreshing) {
             const refreshToken = localStorage.getItem('refresh_token');
 
             if (refreshToken) {
                 isRefreshing = true;
                 
-                // Пытаемся обновить токен
                 const refreshResponse = await fetch(`${API_URL}/auth/refresh/`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -45,15 +42,12 @@ async function apiRequest(endpoint, options = {}) {
 
                 if (refreshResponse.ok) {
                     const data = await refreshResponse.json();
-                    // Сохраняем новый access токен
                     localStorage.setItem('access_token', data.access);
                     
-                    // Повторяем изначальный запрос с новым токеном
                     config.headers['Authorization'] = `Bearer ${data.access}`;
                     isRefreshing = false;
                     return apiRequest(endpoint, options); 
                 } else {
-                    // Рефреш токен тоже не подошел — разлогиниваем
                     isRefreshing = false;
                     localStorage.removeItem('access_token');
                     localStorage.removeItem('refresh_token');
@@ -69,7 +63,6 @@ async function apiRequest(endpoint, options = {}) {
             throw error;
         }
         
-        // Возвращаем данные
         if (options.responseType === 'blob') return { data: await response.blob(), status: response.status };
         const data = await response.json().catch(() => ({}));
         return { data, status: response.status };
@@ -80,7 +73,7 @@ async function apiRequest(endpoint, options = {}) {
     }
 }
 
-// Методы API
+// Auth API
 export const authApi = {
     login: async (credentials) => {
         const res = await apiRequest('/auth/login/', {
@@ -100,32 +93,91 @@ export const authApi = {
     }
 };
 
+// Clients API
 export const clientApi = {
     getAll: (search = '') => apiRequest(search ? `/clients/?search=${search}` : '/clients/'),
+    getById: (id) => apiRequest(`/clients/${id}/`),
     create: (data) => apiRequest('/clients/', { method: 'POST', body: data }),
     update: (id, data) => apiRequest(`/clients/${id}/`, { method: 'PUT', body: data }),
     delete: (id) => apiRequest(`/clients/${id}/`, { method: 'DELETE' }),
 };
 
+// Trainers API
+export const trainerApi = {
+    getAll: () => apiRequest('/trainers/'),
+    getById: (id) => apiRequest(`/trainers/${id}/`),
+    create: (data) => apiRequest('/trainers/', { method: 'POST', body: data }),
+    update: (id, data) => apiRequest(`/trainers/${id}/`, { method: 'PUT', body: data }),
+    delete: (id) => apiRequest(`/trainers/${id}/`, { method: 'DELETE' }),
+};
+
+// Halls API
+export const hallApi = {
+    getAll: () => apiRequest('/halls/'),
+    getById: (id) => apiRequest(`/halls/${id}/`),
+    create: (data) => apiRequest('/halls/', { method: 'POST', body: data }),
+    update: (id, data) => apiRequest(`/halls/${id}/`, { method: 'PUT', body: data }),
+    delete: (id) => apiRequest(`/halls/${id}/`, { method: 'DELETE' }),
+};
+
+// Membership Types API
+export const membershipTypeApi = {
+    getAll: () => apiRequest('/memberships/'),
+    getById: (id) => apiRequest(`/memberships/${id}/`),
+    create: (data) => apiRequest('/memberships/', { method: 'POST', body: data }),
+    update: (id, data) => apiRequest(`/memberships/${id}/`, { method: 'PUT', body: data }),
+    delete: (id) => apiRequest(`/memberships/${id}/`, { method: 'DELETE' }),
+};
+
+// Trainings/Schedule API
 export const trainingApi = {
-    getSchedule: () => apiRequest('/trainings/'),
+    getAll: () => apiRequest('/trainings/'),
+    getById: (id) => apiRequest(`/trainings/${id}/`),
     create: (data) => apiRequest('/trainings/', { method: 'POST', body: data }),
+    update: (id, data) => apiRequest(`/trainings/${id}/`, { method: 'PUT', body: data }),
+    delete: (id) => apiRequest(`/trainings/${id}/`, { method: 'DELETE' }),
     register: (trainingId, clientId) => apiRequest(`/trainings/${trainingId}/register_client/`, {
         method: 'POST',
         body: { client_id: clientId },
     }),
 };
 
-export const referenceApi = {
-    getTrainers: () => apiRequest('/trainers/'),
-    getHalls: () => apiRequest('/halls/'),
-    getMembershipTypes: () => apiRequest('/memberships/'),
+// Payments API
+export const paymentApi = {
+    getAll: () => apiRequest('/payments/'),
+    getById: (id) => apiRequest(`/payments/${id}/`),
+    create: (data) => apiRequest('/payments/', { method: 'POST', body: data }),
+    update: (id, data) => apiRequest(`/payments/${id}/`, { method: 'PUT', body: data }),
+    delete: (id) => apiRequest(`/payments/${id}/`, { method: 'DELETE' }),
 };
 
+// Attendance API
+export const attendanceApi = {
+    getAll: () => apiRequest('/attendance/'),
+    getById: (id) => apiRequest(`/attendance/${id}/`),
+    create: (data) => apiRequest('/attendance/', { method: 'POST', body: data }),
+    update: (id, data) => apiRequest(`/attendance/${id}/`, { method: 'PUT', body: data }),
+    delete: (id) => apiRequest(`/attendance/${id}/`, { method: 'DELETE' }),
+};
+
+// Dashboard Stats API
+export const statsApi = {
+    getDashboard: () => apiRequest('/stats/dashboard/'),
+};
+
+// Reports API
 export const reportApi = {
-    getRevenue: async () => apiRequest('/reports/revenue/', { method: 'GET', responseType: 'blob' }),
-    getAttendance: async () => apiRequest('/reports/attendance/', { method: 'GET', responseType: 'blob' }),
-    getTrainers: async () => apiRequest('/reports/trainer_performance/', { method: 'GET', responseType: 'blob' }),
+    getRevenue: () => apiRequest('/reports/revenue/', { method: 'GET', responseType: 'blob' }),
+    getAttendance: () => apiRequest('/reports/attendance/', { method: 'GET', responseType: 'blob' }),
+    getTrainers: () => apiRequest('/reports/trainer_performance/', { method: 'GET', responseType: 'blob' }),
+    getExpiringMemberships: () => apiRequest('/reports/expiring_memberships/', { method: 'GET', responseType: 'blob' }),
+};
+
+// Reference API (для dropdown'ов)
+export const referenceApi = {
+    getTrainers: () => trainerApi.getAll(),
+    getHalls: () => hallApi.getAll(),
+    getMembershipTypes: () => membershipTypeApi.getAll(),
 };
 
 // Generic export

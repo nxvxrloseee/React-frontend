@@ -11,7 +11,25 @@ export const MENU_ITEMS = [
         path: '/clients',
         label: 'Клиенты',
         icon: '👥',
-        roles: [ROLES.ADMIN, ROLES.MANAGER],
+        roles: [ROLES.ADMIN, ROLES.MANAGER, ROLES.TRAINER],
+    },
+    {
+        path: '/trainers',
+        label: 'Тренеры',
+        icon: '🏋️',
+        roles: [ROLES.ADMIN, ROLES.MANAGER, ROLES.TRAINER],
+    },
+    {
+        path: '/halls',
+        label: 'Залы',
+        icon: '🏢',
+        roles: [ROLES.ADMIN, ROLES.MANAGER, ROLES.TRAINER],
+    },
+    {
+        path: '/membership-types',
+        label: 'Абонементы',
+        icon: '🎫',
+        roles: [ROLES.ADMIN, ROLES.MANAGER, ROLES.TRAINER],
     },
     {
         path: '/schedule',
