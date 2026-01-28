@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import api from '../api/api'; // Ваш настроенный axios инстанс
 import axios from 'axios';
 const Reports = () => {
     const [loading, setLoading] = useState(false);
@@ -9,7 +8,7 @@ const downloadReport = async (reportType, fileName) => {
         setLoading(true);
         
         // 1. Извлекаем актуальный токен
-        const token = localStorage.getItem('token'); 
+        const token = localStorage.getItem('access_token'); 
         
         // 2. Берем базовый URL из окружения Vite
         const baseURL = import.meta.env.VITE_API_URL; 
