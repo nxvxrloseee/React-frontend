@@ -135,6 +135,7 @@ export const membershipTypeApi = {
     getById: (id) => apiRequest(`/membership-types/${id}/`),
     create: (data) => apiRequest('/membership-types/', { method: 'POST', body: data }),
     update: (id, data) => apiRequest(`/membership-types/${id}/`, { method: 'PUT', body: data }),
+    patch: (id, data) => apiRequest(`/membership-types/${id}/`, { method: 'PATCH', body: data }),
     delete: (id) => apiRequest(`/membership-types/${id}/`, { method: 'DELETE' }),
 };
 

@@ -36,13 +36,14 @@ const MembershipTypes = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         
-        // Менеджер может редактировать только цену
         if (user.role === 'manager' && editing) {
             try {
-                await membershipTypeApi.update(editing.id, { price: formData.price });
+                // Используем patch вместо update для частичного обновления
+                await membershipTypeApi.patch(editing.id, { price: formData.price });
                 setModalOpen(false);
                 loadTypes();
             } catch (error) {
+                console.log(error);
                 alert('Ошибка обновления цены');
             }
             return;
