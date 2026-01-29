@@ -14,13 +14,13 @@ const styles = {
     container: {
         display: 'flex',
         minHeight: '100vh',
-        backgroundColor: '#ecf0f1',
+        backgroundColor: '#f5f7fa',
     },
     content: {
-        marginLeft: '240px', // Ширина sidebar из Sidebar.jsx
+        marginLeft: '260px',
         flex: 1,
         padding: '30px',
-        width: 'calc(100% - 240px)',
+        width: 'calc(100% - 260px)',
         boxSizing: 'border-box',
     }
 };

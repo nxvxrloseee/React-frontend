@@ -1,19 +1,612 @@
-:root {
-  --primary-bg: #2c3e50;    /* Темно-синий из ТЗ */
-  --secondary-bg: #ecf0f1;
-  --accent-color: #27ae60;   /* Зеленый для кнопок "Записать/Оплатить" */
-  --error-color: #e74c3c;
-  --text-main: #2c3e50;
-  --sidebar-width: 250px;
-}
+/* ===========================================
+   Фитнес-Лайф - Главные стили
+   На основе макетов Figma
+   =========================================== */
 
-body {
-  margin: 0;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background-color: var(--secondary-bg);
-  color: var(--text-main);
+:root {
+    /* Основные цвета из макета */
+    --primary-blue: #4169E1;      /* Синий для навигации и кнопок */
+    --primary-green: #27ae60;      /* Зелёный для акцентов */
+    --sidebar-bg: #2c3e50;         /* Тёмный фон сайдбара */
+    --sidebar-active: #34495e;
+    --body-bg: #f5f7fa;            /* Светлый фон контента */
+    --card-bg: #ffffff;
+    --text-primary: #2c3e50;
+    --text-secondary: #7f8c8d;
+    --text-light: #ecf0f1;
+    --border-color: #e0e4e8;
+    --error-color: #e74c3c;
+    --warning-color: #f39c12;
+    --success-color: #27ae60;
+    
+    /* Размеры */
+    --sidebar-width: 260px;
+    --header-height: 60px;
+    --border-radius: 8px;
+    --border-radius-lg: 12px;
+    
+    /* Тени */
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
+    --shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
 }
 
 * {
-  box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Roboto', sans-serif;
+    background-color: var(--body-bg);
+    color: var(--text-primary);
+    line-height: 1.5;
+}
+
+/* ===========================================
+   Компоненты форм
+   =========================================== */
+
+.form-input {
+    width: 100%;
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    font-size: 14px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    background: var(--card-bg);
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: var(--primary-blue);
+    box-shadow: 0 0 0 3px rgba(65, 105, 225, 0.15);
+}
+
+.form-input::placeholder {
+    color: var(--text-secondary);
+}
+
+.form-label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--text-primary);
+}
+
+.form-select {
+    width: 100%;
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    font-size: 14px;
+    background: var(--card-bg);
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%237f8c8d' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+}
+
+/* ===========================================
+   Кнопки (по стилю из Figma)
+   =========================================== */
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    border: none;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+}
+
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.btn-primary {
+    background: var(--primary-blue);
+    color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+    background: #3457b2;
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+}
+
+.btn-success {
+    background: var(--success-color);
+    color: white;
+}
+
+.btn-success:hover:not(:disabled) {
+    background: #219150;
+}
+
+.btn-danger {
+    background: var(--error-color);
+    color: white;
+}
+
+.btn-danger:hover:not(:disabled) {
+    background: #c0392b;
+}
+
+.btn-secondary {
+    background: var(--sidebar-active);
+    color: var(--text-light);
+}
+
+.btn-secondary:hover:not(:disabled) {
+    background: var(--sidebar-bg);
+}
+
+.btn-outline {
+    background: transparent;
+    border: 2px solid var(--border-color);
+    color: var(--text-primary);
+}
+
+.btn-outline:hover:not(:disabled) {
+    border-color: var(--primary-blue);
+    color: var(--primary-blue);
+}
+
+.btn-sm {
+    padding: 6px 12px;
+    font-size: 13px;
+}
+
+.btn-lg {
+    padding: 14px 28px;
+    font-size: 16px;
+}
+
+.btn-icon {
+    padding: 8px;
+    min-width: 36px;
+}
+
+/* ===========================================
+   Карточки
+   =========================================== */
+
+.card {
+    background: var(--card-bg);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-sm);
+    padding: 24px;
+    margin-bottom: 20px;
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.card-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+/* Статистические карточки для Dashboard */
+.stat-card {
+    background: var(--card-bg);
+    border-radius: var(--border-radius-lg);
+    padding: 24px;
+    text-align: center;
+    box-shadow: var(--shadow-sm);
+    border-left: 4px solid var(--primary-blue);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.stat-card-icon {
+    font-size: 32px;
+    margin-bottom: 12px;
+}
+
+.stat-card-value {
+    font-size: 36px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+}
+
+.stat-card-label {
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+.stat-card-link {
+    display: inline-block;
+    margin-top: 12px;
+    color: var(--primary-blue);
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.stat-card-link:hover {
+    text-decoration: underline;
+}
+
+/* ===========================================
+   Таблицы
+   =========================================== */
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+.data-table th {
+    background: var(--body-bg);
+    padding: 14px 16px;
+    text-align: left;
+    font-weight: 600;
+    color: var(--text-secondary);
+    border-bottom: 2px solid var(--border-color);
+    white-space: nowrap;
+}
+
+.data-table td {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border-color);
+    vertical-align: middle;
+}
+
+.data-table tbody tr {
+    transition: background 0.15s;
+}
+
+.data-table tbody tr:hover {
+    background: rgba(65, 105, 225, 0.04);
+}
+
+.table-actions {
+    display: flex;
+    gap: 8px;
+}
+
+/* ===========================================
+   Бейджи и статусы
+   =========================================== */
+
+.badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: 20px;
+}
+
+.badge-success {
+    background: rgba(39, 174, 96, 0.15);
+    color: var(--success-color);
+}
+
+.badge-warning {
+    background: rgba(243, 156, 18, 0.15);
+    color: var(--warning-color);
+}
+
+.badge-danger {
+    background: rgba(231, 76, 60, 0.15);
+    color: var(--error-color);
+}
+
+.badge-info {
+    background: rgba(65, 105, 225, 0.15);
+    color: var(--primary-blue);
+}
+
+.badge-secondary {
+    background: rgba(127, 140, 141, 0.15);
+    color: var(--text-secondary);
+}
+
+/* ===========================================
+   Модальные окна
+   =========================================== */
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    animation: fadeIn 0.2s ease;
+}
+
+.modal-content {
+    background: var(--card-bg);
+    border-radius: var(--border-radius-lg);
+    width: 100%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: var(--shadow-lg);
+    animation: slideUp 0.3s ease;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.modal-title {
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    color: var(--text-secondary);
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: background 0.2s;
+}
+
+.modal-close:hover {
+    background: var(--body-bg);
+}
+
+.modal-body {
+    padding: 24px;
+}
+
+.modal-footer {
+    display: flex;
+    gap: 12px;
+    padding: 16px 24px;
+    border-top: 1px solid var(--border-color);
+    background: var(--body-bg);
+    border-radius: 0 0 var(--border-radius-lg) var(--border-radius-lg);
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideUp {
+    from { 
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to { 
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ===========================================
+   Сетка
+   =========================================== */
+
+.grid {
+    display: grid;
+    gap: 20px;
+}
+
+.grid-2 {
+    grid-template-columns: repeat(2, 1fr);
+}
+
+.grid-3 {
+    grid-template-columns: repeat(3, 1fr);
+}
+
+.grid-4 {
+    grid-template-columns: repeat(4, 1fr);
+}
+
+.grid-auto {
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+@media (max-width: 1024px) {
+    .grid-4, .grid-3 {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 640px) {
+    .grid-4, .grid-3, .grid-2 {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ===========================================
+   Утилиты
+   =========================================== */
+
+.text-center { text-align: center; }
+.text-right { text-align: right; }
+.text-muted { color: var(--text-secondary); }
+.text-success { color: var(--success-color); }
+.text-danger { color: var(--error-color); }
+.text-warning { color: var(--warning-color); }
+
+.mb-0 { margin-bottom: 0; }
+.mb-1 { margin-bottom: 8px; }
+.mb-2 { margin-bottom: 16px; }
+.mb-3 { margin-bottom: 24px; }
+.mb-4 { margin-bottom: 32px; }
+
+.mt-1 { margin-top: 8px; }
+.mt-2 { margin-top: 16px; }
+.mt-3 { margin-top: 24px; }
+
+.flex { display: flex; }
+.flex-between { 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+}
+.flex-center { 
+    display: flex; 
+    justify-content: center; 
+    align-items: center; 
+}
+.gap-1 { gap: 8px; }
+.gap-2 { gap: 16px; }
+.gap-3 { gap: 24px; }
+
+/* Алерты */
+.alert {
+    padding: 12px 16px;
+    border-radius: var(--border-radius);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.alert-success {
+    background: rgba(39, 174, 96, 0.1);
+    border: 1px solid rgba(39, 174, 96, 0.3);
+    color: #1e8449;
+}
+
+.alert-error {
+    background: rgba(231, 76, 60, 0.1);
+    border: 1px solid rgba(231, 76, 60, 0.3);
+    color: #c0392b;
+}
+
+.alert-warning {
+    background: rgba(243, 156, 18, 0.1);
+    border: 1px solid rgba(243, 156, 18, 0.3);
+    color: #9a7b0a;
+}
+
+.alert-info {
+    background: rgba(65, 105, 225, 0.1);
+    border: 1px solid rgba(65, 105, 225, 0.3);
+    color: #2c5aa0;
+}
+
+/* Спиннер загрузки */
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--border-color);
+    border-top-color: var(--primary-blue);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px;
+    gap: 16px;
+    color: var(--text-secondary);
+}
+
+/* Пустое состояние */
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-secondary);
+}
+
+.empty-state-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+}
+
+.empty-state-text {
+    font-size: 16px;
+    margin-bottom: 20px;
+}
+
+/* Поиск и фильтры */
+.search-bar {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.search-input {
+    flex: 1;
+    max-width: 400px;
+    padding: 10px 16px;
+    padding-left: 40px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    font-size: 14px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%237f8c8d' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: 12px center;
+}
+
+.filter-group {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.filter-btn {
+    padding: 8px 16px;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.filter-btn:hover {
+    border-color: var(--primary-blue);
+}
+
+.filter-btn.active {
+    background: var(--primary-blue);
+    color: white;
+    border-color: var(--primary-blue);
 }

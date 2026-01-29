@@ -1,81 +1,88 @@
 import { useState, useEffect } from 'react';
-import { trainingApi, referenceApi, clientApi } from '../api/api';
-import { useAuth } from '../context/AuthContext';
+import { trainingApi, trainerApi, hallApi, clientApi } from '../api/api';
+import { usePermissions } from '../hooks/usePermissions';
+import Modal from '../components/ui/Modal';
 
 const Schedule = () => {
-    const { user } = useAuth();
+    const { can, canOwn, isAdmin, isTrainer, isManager, user } = usePermissions();
     
     const [trainings, setTrainings] = useState([]);
     const [trainers, setTrainers] = useState([]);
     const [halls, setHalls] = useState([]);
-    const [types, setTypes] = useState([]);
     const [clients, setClients] = useState([]);
-
-    const [filters, setFilters] = useState({ 
-        date: new Date().toISOString().split('T')[0], 
-        trainer: '' 
-    });
-
-    const [modalMode, setModalMode] = useState(null);
-    const [selectedTraining, setSelectedTraining] = useState(null);
+    const [loading, setLoading] = useState(false);
     
-    const [createForm, setCreateForm] = useState({
+    const [filters, setFilters] = useState({
+        date: new Date().toISOString().split('T')[0],
+        trainer: '',
+        hall: '',
+        type: '',
+    });
+    
+    const [modalMode, setModalMode] = useState(null); // 'create', 'edit', 'register'
+    const [selectedTraining, setSelectedTraining] = useState(null);
+    const [statusMsg, setStatusMsg] = useState({ type: '', text: '' });
+    
+    const [formData, setFormData] = useState({
         date_time: '',
         trainer: '',
         training_type: '',
         hall: '',
         max_clients: 10,
-        status: 'Запланирована'
+        status: 'Запланирована',
     });
     const [registerClientId, setRegisterClientId] = useState('');
-    const [statusMsg, setStatusMsg] = useState({ type: '', text: '' });
+
+    // Типы тренировок
+    const trainingTypes = [
+        { id: 'yoga', name: 'Йога' },
+        { id: 'power', name: 'Силовая' },
+        { id: 'cardio', name: 'Кардио' },
+        { id: 'personal', name: 'Персональная' },
+        { id: 'group', name: 'Групповая' },
+        { id: 'swimming', name: 'Плавание' },
+    ];
 
     useEffect(() => {
-        loadSchedule();
-        loadReferences();
+        loadData();
     }, []);
 
-    const loadSchedule = async () => {
+    const loadData = async () => {
+        setLoading(true);
         try {
-            const res = await trainingApi.getAll();
-            let data = res.data || [];
+            const [trainingsRes, trainersRes, hallsRes, clientsRes] = await Promise.all([
+                trainingApi.getAll(),
+                trainerApi.getAll(),
+                hallApi.getAll(),
+                clientApi.getAll(),
+            ]);
+            
+            let data = trainingsRes.data || [];
             
             // Тренер видит только свои занятия
-            if (user.role === 'trainer' && user.trainer) {
+            if (isTrainer && user?.trainer) {
                 data = data.filter(t => t.trainer === user.trainer);
             }
             
             setTrainings(data);
+            setTrainers(trainersRes.data || []);
+            setHalls(hallsRes.data || []);
+            setClients(clientsRes.data || []);
         } catch (error) {
-            console.error('Failed to load schedule', error);
-        }
-    };
-
-    const loadReferences = async () => {
-        try {
-            const [trainerRes, typeRes, clientRes, hallRes] = await Promise.all([
-                referenceApi.getTrainers(),
-                referenceApi.getMembershipTypes(),
-                clientApi.getAll(),
-                referenceApi.getHalls()
-            ]);
-            
-            setTrainers(trainerRes.data);
-            setTypes(typeRes.data);
-            setClients(clientRes.data);
-            setHalls(hallRes.data);
-        } catch (error) {
-            console.error('Failed to load references', error);
+            console.error('Ошибка загрузки данных:', error);
+        } finally {
+            setLoading(false);
         }
     };
 
     const handleCreateSubmit = async (e) => {
         e.preventDefault();
         
-        // Тренер может создавать только свои занятия
-        let dataToSend = { ...createForm };
-        if (user.role === 'trainer') {
-            if (!user.trainer) {
+        let dataToSend = { ...formData };
+        
+        // Тренер автоматически привязывается к своим занятиям
+        if (isTrainer) {
+            if (!user?.trainer) {
                 setStatusMsg({ type: 'error', text: 'У вашего аккаунта не привязан профиль тренера' });
                 return;
             }
@@ -86,74 +93,61 @@ const Schedule = () => {
             await trainingApi.create(dataToSend);
             setStatusMsg({ type: 'success', text: 'Занятие успешно создано' });
             setModalMode(null);
-            setCreateForm({
-                date_time: '',
-                trainer: '',
-                training_type: '',
-                hall: '',
-                max_clients: 10,
-                status: 'Запланирована'
-            });
-            loadSchedule();
+            resetForm();
+            loadData();
         } catch (error) {
-            console.log(error);
             setStatusMsg({ type: 'error', text: 'Ошибка при создании занятия' });
+        }
+    };
+
+    const handleUpdateSubmit = async (e) => {
+        e.preventDefault();
+        try {
+            await trainingApi.update(selectedTraining.id, formData);
+            setStatusMsg({ type: 'success', text: 'Занятие обновлено' });
+            setModalMode(null);
+            loadData();
+        } catch (error) {
+            setStatusMsg({ type: 'error', text: 'Ошибка обновления' });
         }
     };
 
     const handleRegisterSubmit = async (e) => {
         e.preventDefault();
         
-        // Тренер может записывать только на свои занятия
-        if (user.role === 'trainer' && selectedTraining.trainer !== user.trainer) {
-            setStatusMsg({ type: 'error', text: 'Вы можете записывать клиентов только на свои занятия' });
-            return;
-        }
-        
         try {
             await trainingApi.register(selectedTraining.id, registerClientId);
             setStatusMsg({ type: 'success', text: 'Клиент успешно записан' });
             setModalMode(null);
             setRegisterClientId('');
+            loadData();
         } catch (error) {
-            const msg = error.response?.data?.error || 'Ошибка записи (возможно мест нет)';
+            const msg = error.response?.data?.error || 'Ошибка записи (возможно, нет мест)';
             setStatusMsg({ type: 'error', text: msg });
         }
     };
 
     const handleEdit = (training) => {
-        // Тренер может редактировать только свои занятия
-        if (user.role === 'trainer' && training.trainer !== user.trainer) {
+        // Проверка прав
+        if (isTrainer && training.trainer !== user?.trainer) {
             alert('Вы можете редактировать только свои занятия');
             return;
         }
         
         setSelectedTraining(training);
-        setCreateForm({
+        setFormData({
             date_time: training.date_time,
             trainer: training.trainer,
             training_type: training.training_type,
             hall: training.hall,
             max_clients: training.max_clients,
-            status: training.status
+            status: training.status,
         });
         setModalMode('edit');
     };
 
-    const handleUpdate = async (e) => {
-        e.preventDefault();
-        try {
-            await trainingApi.update(selectedTraining.id, createForm);
-            setStatusMsg({ type: 'success', text: 'Занятие обновлено' });
-            setModalMode(null);
-            loadSchedule();
-        } catch (error) {
-            setStatusMsg({ type: 'error', text: 'Ошибка обновления' });
-        }
-    };
-
     const handleDelete = async (training) => {
-        if (user.role === 'trainer' && training.trainer !== user.trainer) {
+        if (isTrainer && training.trainer !== user?.trainer) {
             alert('Вы можете удалять только свои занятия');
             return;
         }
@@ -162,271 +156,492 @@ const Schedule = () => {
         
         try {
             await trainingApi.delete(training.id);
-            loadSchedule();
+            loadData();
         } catch (error) {
             alert('Ошибка удаления');
         }
     };
 
-    const filteredTrainings = trainings.filter(t => {
-        const matchesDate = t.date_time.startsWith(filters.date);
-        const matchesTrainer = filters.trainer ? t.trainer === parseInt(filters.trainer) : true;
-        return matchesDate && matchesTrainer;
-    });
+    const handleRegisterClick = (training) => {
+        if (isTrainer && training.trainer !== user?.trainer) {
+            alert('Вы можете записывать клиентов только на свои занятия');
+            return;
+        }
+        
+        setSelectedTraining(training);
+        setRegisterClientId('');
+        setModalMode('register');
+    };
 
-    const canCreate = user?.role !== 'manager';
-    const canEdit = user?.role !== 'manager';
-    const canDelete = user?.role === 'admin';
+    const resetForm = () => {
+        setFormData({
+            date_time: '',
+            trainer: '',
+            training_type: '',
+            hall: '',
+            max_clients: 10,
+            status: 'Запланирована',
+        });
+    };
+
+    // Фильтрация занятий
+    const filteredTrainings = trainings.filter(t => {
+        const matchesDate = t.date_time?.startsWith(filters.date);
+        const matchesTrainer = filters.trainer ? t.trainer === parseInt(filters.trainer) : true;
+        const matchesHall = filters.hall ? t.hall === parseInt(filters.hall) : true;
+        const matchesType = filters.type ? t.training_type === filters.type : true;
+        return matchesDate && matchesTrainer && matchesHall && matchesType;
+    }).sort((a, b) => new Date(a.date_time) - new Date(b.date_time));
+
+    // Группировка по времени
+    const groupedByTime = filteredTrainings.reduce((acc, training) => {
+        const time = training.date_time?.split('T')[1]?.slice(0, 5) || '00:00';
+        if (!acc[time]) acc[time] = [];
+        acc[time].push(training);
+        return acc;
+    }, {});
+
+    const getStatusColor = (status) => {
+        switch (status) {
+            case 'Запланирована': return '#3498db';
+            case 'Проведена': return '#27ae60';
+            case 'Отменена': return '#e74c3c';
+            default: return '#7f8c8d';
+        }
+    };
+
+    const canCreate = can('schedule', 'create') || (isTrainer && can('schedule', 'createOwn'));
 
     return (
-        <div>
+        <div style={styles.container}>
+            {/* Заголовок */}
             <div style={styles.header}>
-                <h2>Расписание занятий</h2>
+                <div>
+                    <h1 style={styles.title}>Расписание занятий</h1>
+                    <p style={styles.subtitle}>
+                        {isTrainer ? 'Ваши занятия' : 'Все занятия'} • {filteredTrainings.length} на выбранную дату
+                    </p>
+                </div>
                 {canCreate && (
-                    <button style={styles.btnPrimary} onClick={() => {
-                        setModalMode('create');
-                        setStatusMsg({ type: '', text: '' });
-                    }}>
+                    <button 
+                        className="btn btn-primary"
+                        onClick={() => {
+                            setModalMode('create');
+                            resetForm();
+                            setStatusMsg({ type: '', text: '' });
+                        }}
+                    >
                         + Добавить занятие
                     </button>
                 )}
             </div>
 
+            {/* Уведомление */}
             {statusMsg.text && (
-                <div style={{
-                    padding: '10px', 
-                    marginBottom: '15px', 
-                    borderRadius: '4px',
-                    backgroundColor: statusMsg.type === 'error' ? '#fadbd8' : '#d4efdf',
-                    color: statusMsg.type === 'error' ? '#c0392b' : '#1e8449'
-                }}>
+                <div className={`alert alert-${statusMsg.type === 'error' ? 'error' : 'success'}`}>
                     {statusMsg.text}
                 </div>
             )}
 
-            <div style={styles.filterBar}>
-                <input 
-                    type="date" 
-                    style={styles.input} 
-                    value={filters.date}
-                    onChange={e => setFilters({...filters, date: e.target.value})}
-                />
-                {user.role !== 'trainer' && (
-                    <select 
-                        style={styles.input}
-                        value={filters.trainer}
-                        onChange={e => setFilters({...filters, trainer: e.target.value})}
-                    >
-                        <option value="">Все тренеры</option>
-                        {trainers.map(t => (
-                            <option key={t.id} value={t.id}>{t.surname} {t.name}</option>
-                        ))}
-                    </select>
-                )}
+            {/* Фильтры */}
+            <div style={styles.filtersCard}>
+                <div style={styles.filtersGrid}>
+                    <div>
+                        <label style={styles.filterLabel}>Выбрать дату</label>
+                        <input
+                            type="date"
+                            className="form-input"
+                            value={filters.date}
+                            onChange={e => setFilters({ ...filters, date: e.target.value })}
+                            style={{marginBottom: 0}}
+                        />
+                    </div>
+                    
+                    {!isTrainer && (
+                        <div>
+                            <label style={styles.filterLabel}>Тренер</label>
+                            <select
+                                className="form-select"
+                                value={filters.trainer}
+                                onChange={e => setFilters({ ...filters, trainer: e.target.value })}
+                                style={{marginBottom: 0}}
+                            >
+                                <option value="">Все тренеры</option>
+                                {trainers.map(t => (
+                                    <option key={t.id} value={t.id}>
+                                        {t.surname} {t.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
+                    
+                    <div>
+                        <label style={styles.filterLabel}>Выбрать тип</label>
+                        <select
+                            className="form-select"
+                            value={filters.type}
+                            onChange={e => setFilters({ ...filters, type: e.target.value })}
+                            style={{marginBottom: 0}}
+                        >
+                            <option value="">Все типы</option>
+                            {trainingTypes.map(t => (
+                                <option key={t.id} value={t.id}>{t.name}</option>
+                            ))}
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label style={styles.filterLabel}>Фильтр по залу</label>
+                        <select
+                            className="form-select"
+                            value={filters.hall}
+                            onChange={e => setFilters({ ...filters, hall: e.target.value })}
+                            style={{marginBottom: 0}}
+                        >
+                            <option value="">Все залы</option>
+                            {halls.map(h => (
+                                <option key={h.id} value={h.id}>{h.name}</option>
+                            ))}
+                        </select>
+                    </div>
+                </div>
             </div>
 
-            <div style={styles.grid}>
-                {filteredTrainings.length === 0 ? (
-                    <p style={{color: '#7f8c8d'}}>Нет занятий на выбранную дату.</p>
-                ) : (
-                    filteredTrainings.map(training => (
-                        <div key={training.id} style={styles.card}>
-                            <div style={styles.cardHeader}>
-                                <span style={styles.timeBadge}>
-                                    {new Date(training.date_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                                </span>
-                                <span style={{fontWeight: 'bold'}}>{training.type_name}</span>
-                            </div>
-                            <div style={styles.cardBody}>
-                                <p><strong>Тренер:</strong> {training.trainer_name}</p>
-                                <p><strong>Зал:</strong> {training.hall_name}</p>
-                                <p><strong>Места:</strong> {training.max_clients}</p>
-                                <p style={{
-                                    color: training.status === 'Отменена' ? '#e74c3c' : '#27ae60',
-                                    fontWeight: 'bold'
-                                }}>
-                                    {training.status}
-                                </p>
-                            </div>
-                            <div style={styles.cardFooter}>
-                                <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
-                                    <button 
-                                        style={styles.btnSecondary}
-                                        onClick={() => {
-                                            setSelectedTraining(training);
-                                            setModalMode('register');
-                                            setStatusMsg({type:'', text:''});
-                                        }}
-                                        disabled={training.status !== 'Запланирована'}
-                                    >
-                                        Записать клиента
-                                    </button>
-                                    {canEdit && (
-                                        <button 
-                                            style={styles.btnEdit}
-                                            onClick={() => handleEdit(training)}
-                                        >
-                                            ✏️
-                                        </button>
-                                    )}
-                                    {canDelete && (
-                                        <button 
-                                            style={styles.btnDelete}
-                                            onClick={() => handleDelete(training)}
-                                        >
-                                            🗑️
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                    ))
-                )}
-            </div>
+            {/* Расписание */}
+            {loading ? (
+                <div style={styles.loading}>
+                    <div className="spinner"></div>
+                    <p>Загрузка расписания...</p>
+                </div>
+            ) : (
+                <div className="card">
+                    <table className="data-table">
+                        <thead>
+                            <tr>
+                                <th>День</th>
+                                <th>Время</th>
+                                <th>Тип</th>
+                                <th>Зал</th>
+                                {!isTrainer && <th>Тренер</th>}
+                                <th>Мест</th>
+                                <th>Статус</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {filteredTrainings.length === 0 ? (
+                                <tr>
+                                    <td colSpan={isTrainer ? 7 : 8} style={styles.emptyCell}>
+                                        <div className="empty-state">
+                                            <div className="empty-state-icon">📅</div>
+                                            <p>Нет занятий на выбранную дату</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ) : (
+                                filteredTrainings.map(training => {
+                                    const trainer = trainers.find(t => t.id === training.trainer);
+                                    const hall = halls.find(h => h.id === training.hall);
+                                    const type = trainingTypes.find(t => t.id === training.training_type);
+                                    const dateTime = new Date(training.date_time);
+                                    const dayName = dateTime.toLocaleDateString('ru-RU', { weekday: 'long' });
+                                    const time = dateTime.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+                                    
+                                    const canEditThis = isAdmin || (isTrainer && training.trainer === user?.trainer);
+                                    const canRegister = isAdmin || (isTrainer && training.trainer === user?.trainer);
+                                    
+                                    return (
+                                        <tr key={training.id}>
+                                            <td style={{textTransform: 'capitalize'}}>{dayName}</td>
+                                            <td style={{fontWeight: 600, color: '#4169E1'}}>{time}</td>
+                                            <td>{type?.name || training.training_type || '—'}</td>
+                                            <td>{hall?.name || '—'}</td>
+                                            {!isTrainer && (
+                                                <td>{trainer ? `${trainer.surname} ${trainer.name}` : '—'}</td>
+                                            )}
+                                            <td>
+                                                <span style={styles.slotsInfo}>
+                                                    {training.registered_clients || 0}/{training.max_clients}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <span 
+                                                    className="badge"
+                                                    style={{
+                                                        backgroundColor: `${getStatusColor(training.status)}15`,
+                                                        color: getStatusColor(training.status),
+                                                    }}
+                                                >
+                                                    {training.status}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <div style={styles.actions}>
+                                                    {canRegister && training.status === 'Запланирована' && (
+                                                        <button 
+                                                            className="btn btn-sm btn-success"
+                                                            onClick={() => handleRegisterClick(training)}
+                                                        >
+                                                            + Записать
+                                                        </button>
+                                                    )}
+                                                    {canEditThis && (
+                                                        <button 
+                                                            className="btn btn-sm btn-outline"
+                                                            onClick={() => handleEdit(training)}
+                                                        >
+                                                            ✏️
+                                                        </button>
+                                                    )}
+                                                    {isAdmin && (
+                                                        <button 
+                                                            className="btn btn-sm btn-danger"
+                                                            onClick={() => handleDelete(training)}
+                                                        >
+                                                            🗑️
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            )}
 
             {/* Модальное окно создания/редактирования */}
             {(modalMode === 'create' || modalMode === 'edit') && (
-                <div style={styles.modalOverlay} onClick={() => setModalMode(null)}>
-                    <div style={styles.modalContent} onClick={e => e.stopPropagation()}>
-                        <h3>{modalMode === 'create' ? 'Новое занятие' : 'Редактирование занятия'}</h3>
-                        <form onSubmit={modalMode === 'create' ? handleCreateSubmit : handleUpdate}>
-                            <label style={styles.label}>Дата и время</label>
-                            <input 
-                                type="datetime-local" 
-                                style={styles.inputFull}
-                                value={createForm.date_time}
-                                onChange={e => setCreateForm({...createForm, date_time: e.target.value})}
-                                required 
-                            />
+                <Modal 
+                    title={modalMode === 'create' ? 'Новое занятие' : 'Редактировать занятие'} 
+                    onClose={() => setModalMode(null)}
+                >
+                    <form onSubmit={modalMode === 'create' ? handleCreateSubmit : handleUpdateSubmit}>
+                        <div className="form-label">Дата и время *</div>
+                        <input
+                            type="datetime-local"
+                            className="form-input"
+                            value={formData.date_time}
+                            onChange={e => setFormData({ ...formData, date_time: e.target.value })}
+                            required
+                        />
 
-                            {user.role !== 'trainer' && (
-                                <>
-                                    <label style={styles.label}>Тренер</label>
-                                    <select 
-                                        style={styles.inputFull}
-                                        value={createForm.trainer}
-                                        onChange={e => setCreateForm({...createForm, trainer: e.target.value})}
-                                        required
-                                    >
-                                        <option value="">Выберите тренера</option>
-                                        {trainers.map(t => <option key={t.id} value={t.id}>{t.surname} {t.name}</option>)}
-                                    </select>
-                                </>
-                            )}
+                        {!isTrainer && (
+                            <>
+                                <div className="form-label">Тренер *</div>
+                                <select
+                                    className="form-select"
+                                    value={formData.trainer}
+                                    onChange={e => setFormData({ ...formData, trainer: e.target.value })}
+                                    required
+                                >
+                                    <option value="">Выберите тренера</option>
+                                    {trainers.filter(t => t.is_active !== false).map(t => (
+                                        <option key={t.id} value={t.id}>
+                                            {t.surname} {t.name} ({t.specialization || 'Без специализации'})
+                                        </option>
+                                    ))}
+                                </select>
+                            </>
+                        )}
 
-                            <label style={styles.label}>Тип тренировки</label>
-                            <select 
-                                style={styles.inputFull}
-                                value={createForm.training_type}
-                                onChange={e => setCreateForm({...createForm, training_type: e.target.value})}
-                                required
-                            >
-                                <option value="">Выберите тип</option>
-                                {types.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                            </select>
+                        <div className="form-label">Тип занятия *</div>
+                        <select
+                            className="form-select"
+                            value={formData.training_type}
+                            onChange={e => setFormData({ ...formData, training_type: e.target.value })}
+                            required
+                        >
+                            <option value="">Выберите тип</option>
+                            {trainingTypes.map(t => (
+                                <option key={t.id} value={t.id}>{t.name}</option>
+                            ))}
+                        </select>
 
-                            <label style={styles.label}>Зал</label>
-                            <select 
-                                style={styles.inputFull}
-                                value={createForm.hall}
-                                onChange={e => setCreateForm({...createForm, hall: e.target.value})}
-                                required
-                            >
-                                <option value="">Выберите зал</option>
-                                {halls.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
-                            </select>
+                        <div className="form-label">Зал *</div>
+                        <select
+                            className="form-select"
+                            value={formData.hall}
+                            onChange={e => setFormData({ ...formData, hall: e.target.value })}
+                            required
+                        >
+                            <option value="">Выберите зал</option>
+                            {halls.map(h => (
+                                <option key={h.id} value={h.id}>
+                                    {h.name} (до {h.capacity} чел.)
+                                </option>
+                            ))}
+                        </select>
 
-                            <label style={styles.label}>Лимит участников</label>
-                            <input 
-                                type="number" 
-                                style={styles.inputFull}
-                                value={createForm.max_clients}
-                                onChange={e => setCreateForm({...createForm, max_clients: e.target.value})}
-                            />
-
-                            {modalMode === 'edit' && (
-                                <>
-                                    <label style={styles.label}>Статус</label>
-                                    <select 
-                                        style={styles.inputFull}
-                                        value={createForm.status}
-                                        onChange={e => setCreateForm({...createForm, status: e.target.value})}
-                                    >
-                                        <option value="Запланирована">Запланирована</option>
-                                        <option value="Отменена">Отменена</option>
-                                        <option value="Завершена">Завершена</option>
-                                    </select>
-                                </>
-                            )}
-
-                            <div style={styles.btnGroup}>
-                                <button type="submit" style={styles.btnPrimary}>
-                                    {modalMode === 'create' ? 'Создать' : 'Сохранить'}
-                                </button>
-                                <button type="button" onClick={() => setModalMode(null)} style={styles.btnCancel}>
-                                    Отмена
-                                </button>
+                        <div style={styles.formRow}>
+                            <div style={{flex: 1}}>
+                                <div className="form-label">Макс. участников</div>
+                                <input
+                                    type="number"
+                                    className="form-input"
+                                    min="1"
+                                    value={formData.max_clients}
+                                    onChange={e => setFormData({ ...formData, max_clients: e.target.value })}
+                                />
                             </div>
-                        </form>
-                    </div>
-                </div>
+                            <div style={{flex: 1}}>
+                                <div className="form-label">Статус</div>
+                                <select
+                                    className="form-select"
+                                    value={formData.status}
+                                    onChange={e => setFormData({ ...formData, status: e.target.value })}
+                                >
+                                    <option value="Запланирована">Запланирована</option>
+                                    <option value="Проведена">Проведена</option>
+                                    <option value="Отменена">Отменена</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div style={styles.modalButtons}>
+                            <button type="submit" className="btn btn-primary" style={{flex: 1}}>
+                                {modalMode === 'create' ? 'Создать' : 'Сохранить'}
+                            </button>
+                            <button
+                                type="button"
+                                className="btn btn-outline"
+                                onClick={() => setModalMode(null)}
+                                style={{flex: 1}}
+                            >
+                                Отмена
+                            </button>
+                        </div>
+                    </form>
+                </Modal>
             )}
 
             {/* Модальное окно записи клиента */}
             {modalMode === 'register' && selectedTraining && (
-                <div style={styles.modalOverlay} onClick={() => setModalMode(null)}>
-                    <div style={styles.modalContent} onClick={e => e.stopPropagation()}>
-                        <h3>Запись на {selectedTraining.type_name}</h3>
-                        <p style={{fontSize: '0.9em', color: '#666'}}>
-                            {new Date(selectedTraining.date_time).toLocaleString()} <br/>
-                            Тренер: {selectedTraining.trainer_name}
-                        </p>
-                        <form onSubmit={handleRegisterSubmit}>
-                            <label style={styles.label}>Выберите клиента</label>
-                            <select 
-                                style={styles.inputFull}
-                                value={registerClientId}
-                                onChange={e => setRegisterClientId(e.target.value)}
-                                required
-                            >
-                                <option value="">Выберите из списка</option>
-                                {clients.map(c => (
-                                    <option key={c.id} value={c.id}>{c.surname} {c.name} - {c.phone}</option>
-                                ))}
-                            </select>
-                            
-                            <div style={styles.btnGroup}>
-                                <button type="submit" style={styles.btnPrimary}>Записать</button>
-                                <button type="button" onClick={() => setModalMode(null)} style={styles.btnCancel}>Отмена</button>
-                            </div>
-                        </form>
+                <Modal 
+                    title="Записать клиента на занятие" 
+                    onClose={() => setModalMode(null)}
+                >
+                    <div style={styles.registerInfo}>
+                        <p><strong>Занятие:</strong> {trainingTypes.find(t => t.id === selectedTraining.training_type)?.name || selectedTraining.training_type}</p>
+                        <p><strong>Время:</strong> {new Date(selectedTraining.date_time).toLocaleString('ru-RU')}</p>
+                        <p><strong>Свободных мест:</strong> {selectedTraining.max_clients - (selectedTraining.registered_clients || 0)}</p>
                     </div>
-                </div>
+
+                    <form onSubmit={handleRegisterSubmit}>
+                        <div className="form-label">Выберите клиента *</div>
+                        <select
+                            className="form-select"
+                            value={registerClientId}
+                            onChange={e => setRegisterClientId(e.target.value)}
+                            required
+                        >
+                            <option value="">-- Выберите клиента --</option>
+                            {clients.map(c => (
+                                <option key={c.id} value={c.id}>
+                                    {c.surname} {c.name} ({c.phone})
+                                </option>
+                            ))}
+                        </select>
+
+                        <div style={styles.modalButtons}>
+                            <button type="submit" className="btn btn-success" style={{flex: 1}}>
+                                Записать
+                            </button>
+                            <button
+                                type="button"
+                                className="btn btn-outline"
+                                onClick={() => setModalMode(null)}
+                                style={{flex: 1}}
+                            >
+                                Отмена
+                            </button>
+                        </div>
+                    </form>
+                </Modal>
             )}
         </div>
     );
 };
 
 const styles = {
-    header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' },
-    filterBar: { display: 'flex', gap: '10px', marginBottom: '20px', background: 'white', padding: '15px', borderRadius: '8px' },
-    grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' },
-    card: { background: 'white', borderRadius: '8px', boxShadow: '0 2px 5px rgba(0,0,0,0.1)', overflow: 'hidden' },
-    cardHeader: { background: '#f8f9fa', padding: '15px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #eee' },
-    cardBody: { padding: '15px', fontSize: '14px', lineHeight: '1.6' },
-    cardFooter: { padding: '15px', borderTop: '1px solid #eee' },
-    timeBadge: { background: '#3498db', color: 'white', padding: '4px 8px', borderRadius: '4px', fontSize: '12px' },
-    input: { padding: '8px', border: '1px solid #ddd', borderRadius: '4px' },
-    inputFull: { width: '100%', padding: '10px', margin: '5px 0 15px', border: '1px solid #ddd', borderRadius: '4px' },
-    label: { display: 'block', fontWeight: 'bold', fontSize: '14px', color: '#2c3e50' },
-    btnPrimary: { background: '#27ae60', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '4px', cursor: 'pointer', flex: 1 },
-    btnSecondary: { background: '#34495e', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '4px', cursor: 'pointer', flex: 1, fontSize: '13px' },
-    btnEdit: { background: '#3498db', color: 'white', border: 'none', padding: '8px 12px', borderRadius: '4px', cursor: 'pointer' },
-    btnDelete: { background: '#e74c3c', color: 'white', border: 'none', padding: '8px 12px', borderRadius: '4px', cursor: 'pointer' },
-    btnCancel: { background: '#ecf0f1', color: '#2c3e50', border: 'none', padding: '10px 20px', borderRadius: '4px', cursor: 'pointer', flex: 1 },
-    btnGroup: { display: 'flex', gap: '10px', marginTop: '10px' },
-    modalOverlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 },
-    modalContent: { background: 'white', padding: '30px', borderRadius: '8px', width: '450px', maxWidth: '90%' },
+    container: {
+        padding: '10px',
+    },
+    header: {
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: '24px',
+    },
+    title: {
+        fontSize: '28px',
+        fontWeight: '700',
+        color: '#2c3e50',
+        margin: 0,
+    },
+    subtitle: {
+        fontSize: '14px',
+        color: '#7f8c8d',
+        margin: '4px 0 0',
+    },
+    filtersCard: {
+        background: 'white',
+        borderRadius: '12px',
+        padding: '20px',
+        marginBottom: '20px',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+    },
+    filtersGrid: {
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+        gap: '16px',
+    },
+    filterLabel: {
+        display: 'block',
+        fontSize: '13px',
+        fontWeight: '600',
+        color: '#7f8c8d',
+        marginBottom: '6px',
+    },
+    loading: {
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '60px',
+        gap: '16px',
+        color: '#7f8c8d',
+    },
+    emptyCell: {
+        textAlign: 'center',
+        padding: '40px',
+    },
+    slotsInfo: {
+        fontWeight: '600',
+        color: '#2c3e50',
+    },
+    actions: {
+        display: 'flex',
+        gap: '6px',
+    },
+    formRow: {
+        display: 'flex',
+        gap: '16px',
+    },
+    registerInfo: {
+        background: '#f8f9fa',
+        padding: '16px',
+        borderRadius: '8px',
+        marginBottom: '20px',
+    },
+    modalButtons: {
+        display: 'flex',
+        gap: '12px',
+        marginTop: '24px',
+    },
 };
 
 export default Schedule;

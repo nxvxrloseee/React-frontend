@@ -1,4 +1,4 @@
-import { ROLES } from '../constants/roles';
+import { ROLES } from './permissions';
 
 export const MENU_ITEMS = [
     {
@@ -20,13 +20,7 @@ export const MENU_ITEMS = [
         roles: [ROLES.ADMIN, ROLES.MANAGER, ROLES.TRAINER],
     },
     {
-        path: '/halls',
-        label: 'Залы',
-        icon: '🏢',
-        roles: [ROLES.ADMIN, ROLES.MANAGER, ROLES.TRAINER],
-    },
-    {
-        path: '/membership-types',
+        path: '/memberships',
         label: 'Абонементы',
         icon: '🎫',
         roles: [ROLES.ADMIN, ROLES.MANAGER, ROLES.TRAINER],
@@ -48,5 +42,17 @@ export const MENU_ITEMS = [
         label: 'Отчёты',
         icon: '📊',
         roles: [ROLES.ADMIN, ROLES.MANAGER],
+    },
+    {
+        path: '/halls',
+        label: 'Залы',
+        icon: '🏢',
+        roles: [ROLES.ADMIN],
+    },
+    {
+        path: '/settings',
+        label: 'Настройки',
+        icon: '⚙️',
+        roles: [ROLES.ADMIN],
     },
 ];

@@ -15,10 +15,14 @@ async function apiRequest(endpoint, options = {}) {
         headers['Authorization'] = `Bearer ${token}`;
     }
     
+    // Удаляем Content-Type для blob запросов
+    if (options.responseType === 'blob') {
+        delete headers['Content-Type'];
+    }
+    
     const config = {
         method: options.method || 'GET',
         headers,
-        ...options,
     };
 
     if (options.body && typeof options.body === 'object') {
@@ -28,6 +32,7 @@ async function apiRequest(endpoint, options = {}) {
     try {
         let response = await fetch(url, config);
 
+        // Обработка 401 - попытка обновить токен
         if (response.status === 401 && !isRefreshing) {
             const refreshToken = localStorage.getItem('refresh_token');
 
@@ -63,7 +68,11 @@ async function apiRequest(endpoint, options = {}) {
             throw error;
         }
         
-        if (options.responseType === 'blob') return { data: await response.blob(), status: response.status };
+        // Обработка blob ответов (для PDF)
+        if (options.responseType === 'blob') {
+            return { data: await response.blob(), status: response.status };
+        }
+        
         const data = await response.json().catch(() => ({}));
         return { data, status: response.status };
 
@@ -170,17 +179,48 @@ export const attendanceApi = {
     delete: (id) => apiRequest(`/attendance/${id}/`, { method: 'DELETE' }),
 };
 
-// Dashboard Stats API
-export const statsApi = {
-    getDashboard: () => apiRequest('/stats/dashboard/'),
-};
-
-// Reports API
+// Reports API - ИСПРАВЛЕНО: убран Accept header
 export const reportApi = {
-    getRevenue: () => apiRequest('/reports/revenue/', { method: 'GET', responseType: 'blob' }),
-    getAttendance: () => apiRequest('/reports/attendance/', { method: 'GET', responseType: 'blob' }),
-    getTrainers: () => apiRequest('/reports/trainer_performance/', { method: 'GET', responseType: 'blob' }),
-    getExpiringMemberships: () => apiRequest('/reports/expiring_memberships/', { method: 'GET', responseType: 'blob' }),
+    getRevenue: () => {
+        const token = localStorage.getItem('access_token');
+        return fetch(`${API_URL}/reports/revenue/`, {
+            method: 'GET',
+            headers: { 'Authorization': `Bearer ${token}` },
+        }).then(res => {
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            return res.blob();
+        });
+    },
+    getAttendance: () => {
+        const token = localStorage.getItem('access_token');
+        return fetch(`${API_URL}/reports/attendance/`, {
+            method: 'GET',
+            headers: { 'Authorization': `Bearer ${token}` },
+        }).then(res => {
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            return res.blob();
+        });
+    },
+    getTrainers: () => {
+        const token = localStorage.getItem('access_token');
+        return fetch(`${API_URL}/reports/trainer_performance/`, {
+            method: 'GET',
+            headers: { 'Authorization': `Bearer ${token}` },
+        }).then(res => {
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            return res.blob();
+        });
+    },
+    getExpiringMemberships: () => {
+        const token = localStorage.getItem('access_token');
+        return fetch(`${API_URL}/reports/expiring_memberships/`, {
+            method: 'GET',
+            headers: { 'Authorization': `Bearer ${token}` },
+        }).then(res => {
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            return res.blob();
+        });
+    },
 };
 
 // Reference API (для dropdown'ов)
@@ -197,7 +237,5 @@ export const api = {
     put: (url, body, options) => apiRequest(url, { ...options, method: 'PUT', body }),
     delete: (url, options) => apiRequest(url, { ...options, method: 'DELETE' }),
 };
-
-
 
 export default api;

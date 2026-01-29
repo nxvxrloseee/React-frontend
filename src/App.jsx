@@ -7,11 +7,12 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Clients from './pages/Clients';
 import Trainers from './pages/Trainers';
-import Halls from './pages/Halls';
-import MembershipTypes from './pages/MembershipTypes';
 import Schedule from './pages/Schedule';
 import Payments from './pages/Payments';
+import Memberships from './pages/Memberships';
+import Halls from './pages/Halls';
 import Reports from './pages/Reports';
+import Settings from './pages/Settings';
 
 // Компонент для защиты роутов
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -19,12 +20,8 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
 
     if (loading) {
         return (
-            <div style={{ 
-                display: 'flex', 
-                justifyContent: 'center', 
-                alignItems: 'center', 
-                minHeight: '100vh' 
-            }}>
+            <div style={styles.loading}>
+                <div style={styles.spinner}></div>
                 <p>Загрузка...</p>
             </div>
         );
@@ -45,12 +42,8 @@ const ProtectedLayout = () => {
 
     if (loading) {
         return (
-            <div style={{ 
-                display: 'flex', 
-                justifyContent: 'center', 
-                alignItems: 'center', 
-                minHeight: '100vh' 
-            }}>
+            <div style={styles.loading}>
+                <div style={styles.spinner}></div>
                 <p>Загрузка...</p>
             </div>
         );
@@ -92,19 +85,10 @@ function App() {
                 />
                 
                 <Route 
-                    path="halls" 
+                    path="memberships" 
                     element={
                         <ProtectedRoute allowedRoles={['admin', 'manager', 'trainer']}>
-                            <Halls />
-                        </ProtectedRoute>
-                    } 
-                />
-                
-                <Route 
-                    path="membership-types" 
-                    element={
-                        <ProtectedRoute allowedRoles={['admin', 'manager', 'trainer']}>
-                            <MembershipTypes />
+                            <Memberships />
                         </ProtectedRoute>
                     } 
                 />
@@ -135,11 +119,49 @@ function App() {
                         </ProtectedRoute>
                     } 
                 />
+
+                <Route 
+                    path="halls" 
+                    element={
+                        <ProtectedRoute allowedRoles={['admin']}>
+                            <Halls />
+                        </ProtectedRoute>
+                    } 
+                />
+
+                <Route 
+                    path="settings" 
+                    element={
+                        <ProtectedRoute allowedRoles={['admin']}>
+                            <Settings />
+                        </ProtectedRoute>
+                    } 
+                />
             </Route>
             
             <Route path="*" element={<Navigate to="/" />} />
         </Routes>
     );
 }
+
+const styles = {
+    loading: {
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'center',
+        minHeight: '100vh',
+        gap: '16px',
+        color: '#7f8c8d',
+    },
+    spinner: {
+        width: '40px',
+        height: '40px',
+        border: '3px solid #e0e4e8',
+        borderTopColor: '#4169E1',
+        borderRadius: '50%',
+        animation: 'spin 0.8s linear infinite',
+    },
+};
 
 export default App;

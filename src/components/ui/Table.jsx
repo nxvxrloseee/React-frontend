@@ -1,4 +1,4 @@
-const Table = ({ columns, data, actions }) => {
+const Table = ({ columns, data, actions, loading = false }) => {
     const renderCell = (column, row) => {
         if (column.render) {
             return column.render(row[column.key], row);
@@ -8,26 +8,41 @@ const Table = ({ columns, data, actions }) => {
         
         // Обработка булевых значений
         if (typeof value === 'boolean') {
-            return value ? '✓' : '✗';
+            return (
+                <span className={`badge ${value ? 'badge-success' : 'badge-secondary'}`}>
+                    {value ? 'Да' : 'Нет'}
+                </span>
+            );
         }
         
         // Обработка null/undefined
         if (value === null || value === undefined) {
-            return '-';
+            return <span style={{color: '#95a5a6'}}>—</span>;
         }
         
         return value;
     };
 
+    if (loading) {
+        return (
+            <div style={styles.loadingContainer}>
+                <div className="spinner"></div>
+                <p>Загрузка данных...</p>
+            </div>
+        );
+    }
+
     return (
-        <div style={{ overflowX: 'auto' }}>
-            <table style={styles.table}>
+        <div style={styles.tableWrapper}>
+            <table className="data-table">
                 <thead>
-                    <tr style={styles.headerRow}>
+                    <tr>
                         {columns.map(col => (
-                            <th key={col.key} style={styles.th}>{col.label}</th>
+                            <th key={col.key} style={col.width ? {width: col.width} : {}}>
+                                {col.label}
+                            </th>
                         ))}
-                        {actions && <th style={styles.th}>Действия</th>}
+                        {actions && <th style={{width: '150px'}}>Действия</th>}
                     </tr>
                 </thead>
                 <tbody>
@@ -37,20 +52,25 @@ const Table = ({ columns, data, actions }) => {
                                 colSpan={columns.length + (actions ? 1 : 0)} 
                                 style={styles.emptyCell}
                             >
-                                Нет данных
+                                <div style={styles.emptyState}>
+                                    <span style={styles.emptyIcon}>📋</span>
+                                    <p>Нет данных для отображения</p>
+                                </div>
                             </td>
                         </tr>
                     ) : (
                         data.map((row, index) => (
-                            <tr key={row.id || index} style={styles.row}>
+                            <tr key={row.id || index}>
                                 {columns.map(col => (
-                                    <td key={col.key} style={styles.td}>
+                                    <td key={col.key}>
                                         {renderCell(col, row)}
                                     </td>
                                 ))}
                                 {actions && (
-                                    <td style={styles.td}>
-                                        {actions(row)}
+                                    <td>
+                                        <div style={styles.actionsCell}>
+                                            {actions(row)}
+                                        </div>
                                     </td>
                                 )}
                             </tr>
@@ -63,32 +83,34 @@ const Table = ({ columns, data, actions }) => {
 };
 
 const styles = {
-    table: {
-        width: '100%',
-        borderCollapse: 'collapse',
-        fontSize: '14px',
+    tableWrapper: {
+        overflowX: 'auto',
     },
-    headerRow: {
-        backgroundColor: '#f8f9fa',
-        borderBottom: '2px solid #dee2e6',
-    },
-    th: {
-        padding: '12px',
-        textAlign: 'left',
-        fontWeight: '600',
-        color: '#495057',
-    },
-    row: {
-        borderBottom: '1px solid #dee2e6',
-        transition: 'background-color 0.2s',
-    },
-    td: {
-        padding: '12px',
+    loadingContainer: {
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '60px',
+        gap: '16px',
+        color: '#7f8c8d',
     },
     emptyCell: {
-        padding: '20px',
+        padding: '40px',
         textAlign: 'center',
-        color: '#6c757d',
+    },
+    emptyState: {
+        color: '#95a5a6',
+    },
+    emptyIcon: {
+        fontSize: '32px',
+        display: 'block',
+        marginBottom: '12px',
+    },
+    actionsCell: {
+        display: 'flex',
+        gap: '8px',
+        justifyContent: 'flex-end',
     },
 };
 
